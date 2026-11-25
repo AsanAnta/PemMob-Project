@@ -1,50 +1,174 @@
-# Welcome to your Expo app 👋
+# 🛠️ Tukang On-Demand — Mobile Service Booking App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+[![React Native](https://img.shields.io/badge/React_Native-0.88.1-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo_SDK-58-000020?logo=expo&logoColor=white)](https://expo.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Expo Router](https://img.shields.io/badge/Expo_Router-v58-purple)](https://docs.expo.dev/router/introduction/)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-success)]()
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## Get started
+> Proyek Praktikum Pemrograman Mobile — Teknik Informatika, **Universitas Muhammadiyah Malang**.  
+> Aplikasi mobile berbasis **React Native** & **Expo** untuk pencarian, pemesanan, dan manajemen jasa perbaikan rumah (*on-demand home services*) dengan arsitektur asynchronous dan modern state management.
 
-1. Install dependencies
+---
 
+## 📌 Daftar Isi
+- [Tentang Proyek](#-tentang-proyek)
+- [Fitur Utama](#-fitur-utama)
+  - [Fitur Modul 2 (UI, State & Theme)](#1-fitur-modul-2-ui-state--theming)
+  - [Fitur Modul 3 (Asynchronous & Networking)](#2-fitur-modul-3-asynchronous--networking)
+- [Struktur Direktori Proyek](#-struktur-direktori-proyek)
+- [Teknologi yang Digunakan](#-teknologi-yang-digunakan)
+- [Panduan Instalasi & Menjalankan](#-panduan-instalasi--menjalankan)
+- [Dokumentasi Latihan Asynchronous (`exercise.ts`)](#-dokumentasi-latihan-asynchronous-exercisets)
+- [Kontributor](#-kontributor)
+
+---
+
+## 📖 Tentang Proyek
+
+**Tukang On-Demand** adalah aplikasi penyedia jasa kebersihan, kelistrikan, servis AC, perbaikan pipa, dan pertukangan bangunan. Aplikasi ini dibangun dengan standar arsitektur bersih (*clean architecture*), memisahkan antara logika antarmuka (*presentation layer*), manajemen tema (*contexts*), serta layanan data jaringan (*service layer*).
+
+Aplikasi ini mencakup penguasaan materi dari:
+1. **Modul 2**: *Komponen Interaktif, State Management, Styling Dinamis, dan Navigasi.*
+2. **Modul 3**: *Pemrograman Asynchronous, Objek Promise, Penanganan Error API, dan Reusable State UI.*
+
+---
+
+## ✨ Fitur Utama
+
+### 1. Fitur Modul 2 (UI, State & Theming)
+* **Katalog Tukang Lengkap**: Menampilkan daftar tukang berdasarkan spesialisasi, rating kepuasan, tarif per jam, dan lokasi.
+* **Filter & Pencarian Instan**: 
+  * Pencarian berbasis nama dan spesialisasi secara *real-time*.
+  * Filter kategori dinamis (Semua, Kelistrikan, AC, Bangunan, Pipa, Cat, dll).
+* **Mode Terang / Gelap (*Dark Mode*)**:
+  * Menggunakan React Context API (`ThemeContext`) untuk manajemen tema global.
+  * Tampilan responsif yang menyesuaikan palet warna secara otomatis.
+* **Detail & Pemesanan (*Booking Flow*)**:
+  * Layar rincian profil tukang (`app/worker/[id].tsx`).
+  * Formulir pemesanan tanggal, alamat pengerjaan, dan estimasi biaya (`app/booking.tsx`).
+
+### 2. Fitur Modul 3 (Asynchronous & Networking)
+* **Pemrograman Asynchronous Modern**:
+  * Pengambilan data menggunakan pola `async / await` dan Promise Chaining (`.then()`, `.catch()`, `.finally()`).
+  * Simulasi latensi jaringan riil menggunakan helper `delay()`.
+* **Pemisahan Lapisan Layanan (*Service Layer Architecture*)**:
+  * `services/api.ts`: Klien API dasar untuk simulasi request HTTP (GET, POST, error handling).
+  * `services/workerService.ts`: Mengisolasi logika bisnis pertukangan dan pemrosesan data sebelum dikonsumsi oleh layar UI.
+* **Komponen Status UI Reaktif**:
+  * `<Loading />`: Indikator loading yang bersih dan ramah pengguna selama proses pengambilan data berlangsung.
+  * `<ErrorMessage />`: Penanganan kesalahan jaringan atau kegagalan API dengan opsi retry/muat ulang.
+
+---
+
+## 📂 Struktur Direktori Proyek
+
+```text
+PemMob-Project/
+├── app/                        # Direktori rute berbasis berkas (Expo Router)
+│   ├── _layout.tsx             # Root layout & ThemeProvider wrapper
+│   ├── index.tsx               # Layar beranda utama (Daftar Tukang & Filter)
+│   ├── booking.tsx             # Layar formulir pemesanan jasa
+│   ├── settings.tsx            # Pengaturan tema dan profil aplikasi
+│   └── worker/
+│       └── [id].tsx            # Layar detail profil tukang (Dynamic Route)
+├── components/                 # Komponen UI modular yang dapat digunakan kembali
+│   ├── ErrorMessage.tsx        # Komponen penanganan error state
+│   └── Loading.tsx             # Komponen indikator loading
+├── constants/                  # Konstanta statis & data awal
+│   └── workers.ts              # Data dummy spesialisasi & daftar tukang
+├── contexts/                   # State global aplikasi
+│   └── ThemeContext.tsx        # Konteks Dark/Light mode theme
+├── services/                   # Lapisan logika data & pemanggilan API
+│   ├── api.ts                  # Mock HTTP client & request handlers
+│   └── workerService.ts        # Business logic fetching & data mapper
+├── types/                      # Definisi tipe TypeScript
+│   └── api.ts                  # Interface respons API & model data
+├── utils/                      # Helper & utilitas umum
+│   └── delay.ts                # Fungsi delay berbasis Promise
+├── assets/                     # Aset gambar, font, dan ikon
+├── exercise.ts                 # Script latihan resmi Asynchronous Modul 3
+├── app.json                    # Konfigurasi aplikasi Expo
+├── package.json                # Dependensi proyek
+└── tsconfig.json               # Konfigurasi TypeScript
+```
+
+---
+
+## 🚀 Teknologi yang Digunakan
+
+| Kategori | Teknologi |
+| :--- | :--- |
+| **Framework Mobile** | React Native `0.88.1` |
+| **Platform Runtime** | Expo SDK `58.0.0` |
+| **Language** | TypeScript `6.0.3` |
+| **Routing** | Expo Router `v58` (File-based Navigation) |
+| **Icon Library** | `@expo/vector-icons` (Ionicons) |
+| **State Management** | React Hooks (`useState`, `useEffect`, `useMemo`, `useRef`) & Context API |
+| **Styling** | React Native StyleSheet dengan dynamic color tokens |
+
+---
+
+## 💻 Panduan Instalasi & Menjalankan
+
+### Prasyarat
+* [Node.js](https://nodejs.org/) versi 18 atau lebih baru.
+* Ponsel Android/iOS dengan aplikasi **Expo Go** terpasang, ATAU emulator Android Studio.
+
+### Langkah Instalasi
+
+1. **Clone Repositori**:
+   ```bash
+   git clone https://github.com/AsanAnta/PemMob-Project.git
+   cd PemMob-Project
+   ```
+
+2. **Pasang Dependensi**:
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. **Jalankan Server Pengembang**:
    ```bash
-   npx expo start
+   npx expo start -c
    ```
 
-In the output, you'll find options to open the app in a
+4. **Buka Aplikasi**:
+   * **Di Ponsel Nyata**: Pindai QR Code yang muncul di terminal menggunakan kamera (iOS) atau aplikasi Expo Go (Android).
+   * **Di Web Browser**: Tekan tombol `w` di terminal.
+   * **Di Android Emulator**: Tekan tombol `a` di terminal.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🧪 Dokumentasi Latihan Asynchronous (`exercise.ts`)
 
-## Get a fresh project
+File [exercise.ts](file:///c:/Users/LENOVO/Documents/Semester%205%20Pemrogaman%20Mobile/Praktikum/Project_mobile/PemMob-Project-main%20-modul3/PemMob-Project-main/exercise.ts) mendemonstrasikan konsep dasar dan lanjutan pemrograman asynchronous JavaScript/TypeScript:
 
-When you're ready, run:
+1. **Perbedaan Synchronous vs Asynchronous**:
+   - Membandingkan eksekusi baris per baris yang memblokir alur (*blocking*) dengan eksekusi berbasis Event Loop (*non-blocking*).
+2. **Pembuatan Objek Promise**:
+   - Pola `new Promise((resolve, reject) => ...)` untuk menangani operasi yang membutuhkan waktu tunggu.
+3. **Simulasi Penanganan Kesalahan**:
+   - Validasi data ID tukang: Mengembalikan data pahlawan/tukang jika ID valid (`resolve`), atau melempar `Error` deskriptif jika tidak ditemukan (`reject`).
+4. **Agregasi Data Paralel**:
+   - Menggabungkan data profil tukang dengan statistik kepuasan kerja secara asinkron.
 
+Untuk menjalankan file latihan ini secara terpisah melalui terminal Node.js:
 ```bash
-npm run reset-project
+npx ts-node exercise.ts
+# atau
+node exercise.ts
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 👤 Kontributor
 
-To learn more about developing your project with Expo, look at the following resources:
+* **Nama**: Asan Anta
+* **Institusi**: Teknik Informatika — Universitas Muhammadiyah Malang (UMM)
+* **GitHub**: [@AsanAnta](https://github.com/AsanAnta)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+⭐ *Jika proyek ini bermanfaat, jangan lupa berikan bintang (star) di repositori ini!*
