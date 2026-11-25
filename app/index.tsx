@@ -12,12 +12,14 @@ import {
 import Loading from "../components/Loading";
 import { services, Worker } from "../constants/workers";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAuth } from "../contexts/AuthContext";
 import { fetchAllWorkersApi } from "../services/api";
 import { getWorkerWithPromiseChain } from "../services/workerService";
 
 export default function Index() {
   const router = useRouter();
   const { isDark, colors } = useTheme();
+  const { user } = useAuth();
 
   // State untuk Data Asynchronous (Modul 3)
   const [workerList, setWorkerList] = useState<Worker[]>([]);
@@ -118,11 +120,11 @@ export default function Index() {
       <View style={styles.header}>
         <View>
           <Text style={[styles.locationLabel, { color: colors.muted }]}>
-            Lokasi Anda
+            Halo, {user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Pelanggan"}! 👋
           </Text>
 
           <View style={styles.locationRow}>
-            <Ionicons name="location" size={18} color={colors.accent} />
+            <Ionicons name="location" size={16} color={colors.accent} />
             <Text style={[styles.locationText, { color: colors.text }]}>
               Jakarta Selatan
             </Text>
@@ -130,6 +132,24 @@ export default function Index() {
         </View>
 
         <View style={styles.headerActions}>
+          {/* Tombol Pesanan Saya (Modul 4 Cloud Database) */}
+          <Pressable
+            style={[
+              styles.notificationButton,
+              {
+                backgroundColor: colors.search,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() => router.push("/my-bookings" as any)}
+          >
+            <Ionicons
+              name="receipt-outline"
+              size={21}
+              color={colors.accent}
+            />
+          </Pressable>
+
           {/* Tombol Refresh Async API */}
           <Pressable
             style={[
@@ -148,7 +168,7 @@ export default function Index() {
             />
           </Pressable>
 
-          {/* Tombol Tema */}
+          {/* Tombol Profil & Pengaturan */}
           <Pressable
             style={[
               styles.notificationButton,
@@ -160,7 +180,7 @@ export default function Index() {
             onPress={() => router.push("/settings")}
           >
             <Ionicons
-              name={isDark ? "moon" : "sunny-outline"}
+              name="person-outline"
               size={21}
               color={colors.accent}
             />

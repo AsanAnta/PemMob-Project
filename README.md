@@ -32,6 +32,7 @@
 Aplikasi ini mencakup penguasaan materi dari:
 1. **Modul 2**: *Komponen Interaktif, State Management, Styling Dinamis, dan Navigasi.*
 2. **Modul 3**: *Pemrograman Asynchronous, Objek Promise, Penanganan Error API, dan Reusable State UI.*
+3. **Modul 4**: *Database Cloud & Autentikasi Supabase, Hardware Vault Keystore, Route Guard, dan Row Level Security (RLS).*
 
 ---
 
@@ -59,6 +60,20 @@ Aplikasi ini mencakup penguasaan materi dari:
 * **Komponen Status UI Reaktif**:
   * `<Loading />`: Indikator loading yang bersih dan ramah pengguna selama proses pengambilan data berlangsung.
   * `<ErrorMessage />`: Penanganan kesalahan jaringan atau kegagalan API dengan opsi retry/muat ulang.
+
+### 3. Fitur Modul 4 (Database Cloud & Autentikasi Supabase)
+* **Autentikasi & Brankas Kunci Perangkat Keras (*Hardware Vault*)**:
+  * Layar Masuk (`app/(auth)/login.tsx`) dan Pendaftaran (`app/(auth)/register.tsx`) dengan metadata pengguna (Nama Lengkap, Nomor HP, Role).
+  * Penyimpanan sesi terenkripsi via `ExpoSecureStoreAdapter` (`expo-secure-store` pada Android/iOS dan `localStorage` pada Web).
+* **Manajemen Sesi Global & Route Guard**:
+  * `contexts/AuthContext.tsx` dengan rehidrasi sesi otomatis (`getSession()`) dan pendengar real-time (`onAuthStateChange()`).
+  * Gatekeeper navigasi pada `app/_layout.tsx`: Pengguna belum login otomatis diarahkan ke Login, sedangkan pengguna login dipersilakan mengakses katalog.
+* **Database Cloud PostgreSQL & Row Level Security (RLS)**:
+  * Tabel `bookings` di Supabase untuk mencatat seluruh pemesanan jasa tukang secara terpusat di cloud.
+  * Kebijakan RLS (`auth.uid() = user_id`) menjamin isolasi data mutlak: Pelanggan hanya dapat melihat dan mengelola pesanannya sendiri (*enterprise multitenancy*).
+* **Layar Riwayat Pesanan (`app/my-bookings.tsx`)**:
+  * Operasi CRUD lengkap: Mengambil daftar pesanan (`SELECT`), membatalkan status pesanan (`UPDATE`), dan menghapus riwayat (`DELETE`).
+  * Dilengkapi **Optimistic UI** (respons instan) dan **Pull-to-Refresh** (`RefreshControl`).
 
 ---
 

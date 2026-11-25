@@ -1,6 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -8,24 +6,78 @@ import {
   Text,
   TextInput,
   View,
+  Alert,
+  ActivityIndicator,
+  Platform,
 } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../services/supabase";
 
 export default function BookingModalScreen() {
   const router = useRouter();
-  const { workerName, paket } = useLocalSearchParams<{
+  const { workerId, workerName, paket } = useLocalSearchParams<{
     workerId?: string;
     workerName?: string;
     paket?: string;
   }>();
   const { colors } = useTheme();
+  const { user } = useAuth();
 
   const [address, setAddress] = useState<string>("Jl. Sudirman No. 10, Jakarta Selatan");
   const [notes, setNotes] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submitted, setSubmitted] = useState<boolean>(false);
 
-  const handleConfirm = () => {
-    setSubmitted(true);
+  const showAlert = (title: string, message: string) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!address.trim()) {
+      showAlert("Alamat Kosong", "Mohon masukkan alamat lengkap pengerjaan.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 1. Simpan pesanan ke cloud database PostgreSQL (Supabase) dengan perlindungan RLS
+      const { error } = await supabase.from("bookings").insert([
+        {
+          user_id: user?.id,
+          worker_id: workerId || "1",
+          worker_name: workerName || "Budi Santoso",
+          paket: paket || "Harian",
+          address: address.trim(),
+          notes: notes.trim() || null,
+          status: "pending",
+        },
+      ]);
+
+      if (error) {
+        if (error.code === "PGRST205" || error.message.includes("does not exist")) {
+          showAlert(
+            "Tabel Belum Dibuat",
+            "Tabel 'bookings' belum dibuat di Supabase! Jalankan file 'schema_modul4.sql' di SQL Editor Supabase."
+          );
+        } else {
+          throw error;
+        }
+      } else {
+        setSubmitted(true);
+      }
+    } catch (err: any) {
+      showAlert("Gagal Membuat Pesanan", err.message || "Terjadi kesalahan koneksi.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -54,6 +106,12 @@ export default function BookingModalScreen() {
             {paket ?? "Harian"}
           </Text>
         </Text>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>
+          Pemesan:{" "}
+          <Text style={{ color: colors.text, fontWeight: "600" }}>
+            {user?.user_metadata?.full_name || user?.email}
+          </Text>
+        </Text>
 
         <Text style={[styles.label, { color: colors.text }]}>
           Alamat Pengerjaan
@@ -79,7 +137,7 @@ export default function BookingModalScreen() {
         <TextInput
           value={notes}
           onChangeText={setNotes}
-          placeholder="Contoh: Lampu ruang tamu mati..."
+          placeholder="Contoh: Lampu ruang tamu mati total..."
           placeholderTextColor={colors.muted}
           multiline
           style={[
@@ -100,45 +158,73 @@ export default function BookingModalScreen() {
               { backgroundColor: colors.serviceBg, borderColor: colors.accent },
             ]}
           >
-            <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
-            <Text style={[styles.successText, { color: colors.text }]}>
-              Pesanan berhasil dibuat! Gunakan tombol di bawah untuk kembali ke
-              Beranda.
-            </Text>
+            <Ionicons name="checkmark-circle" size={24} color={colors.accent} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.successTitle, { color: colors.text }]}>
+                Pesanan Berhasil Disimpan ke Cloud! 🎉
+              </Text>
+              <Text style={[styles.successText, { color: colors.muted }]}>
+                Data tersimpan di Supabase dan dilindungi Row Level Security (RLS).
+              </Text>
+            </View>
           </View>
         )}
       </View>
 
       {!submitted ? (
         <Pressable
-          style={[styles.primaryButton, { backgroundColor: colors.accent }]}
+          style={[
+            styles.primaryButton,
+            { backgroundColor: colors.accent },
+            isSubmitting && { opacity: 0.7 },
+          ]}
           onPress={handleConfirm}
+          disabled={isSubmitting}
         >
-          <Ionicons name="checkmark-done-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>Kirim Pesanan</Text>
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" size="small" />
+          ) : (
+            <>
+              <Ionicons name="cloud-upload-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>Simpan Pesanan ke Cloud</Text>
+            </>
+          )}
         </Pressable>
       ) : (
-        <Pressable
-          style={[styles.primaryButton, { backgroundColor: colors.accent }]}
-          onPress={() => router.replace("/")}
-        >
-          <Ionicons name="home-outline" size={20} color="#FFFFFF" />
-          <Text style={styles.primaryButtonText}>
-            Selesai & Kembali ke Beranda (replace)
-          </Text>
-        </Pressable>
+        <>
+          <Pressable
+            style={[styles.primaryButton, { backgroundColor: colors.accent }]}
+            onPress={() => router.replace("/my-bookings" as any)}
+          >
+            <Ionicons name="receipt-outline" size={20} color="#FFFFFF" />
+            <Text style={styles.primaryButtonText}>Lihat Daftar Pesanan Saya</Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.secondaryButton,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+            onPress={() => router.replace("/")}
+          >
+            <Ionicons name="home-outline" size={20} color={colors.text} />
+            <Text style={[styles.secondaryButtonText, { color: colors.text }]}>
+              Kembali ke Beranda
+            </Text>
+          </Pressable>
+        </>
       )}
 
       <Pressable
         style={[
           styles.secondaryButton,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 8 },
         ]}
         onPress={() => router.dismiss()}
       >
         <Ionicons name="close-outline" size={20} color={colors.text} />
         <Text style={[styles.secondaryButtonText, { color: colors.text }]}>
-          Tutup Modal (dismiss)
+          Tutup Modal
         </Text>
       </Pressable>
     </ScrollView>
@@ -192,11 +278,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+  },
+  successTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 2,
   },
   successText: {
-    flex: 1,
-    fontSize: 13,
+    fontSize: 12,
   },
   primaryButton: {
     height: 50,
@@ -205,7 +295,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   primaryButtonText: {
     color: "#FFFFFF",
