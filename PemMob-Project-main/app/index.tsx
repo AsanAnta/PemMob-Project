@@ -9,23 +9,78 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { services, workers } from "../constants/workers";
+import Loading from "../components/Loading";
+import { services, Worker } from "../constants/workers";
 import { useTheme } from "../contexts/ThemeContext";
+import { fetchAllWorkersApi } from "../services/api";
+import { getWorkerWithPromiseChain } from "../services/workerService";
 
 export default function Index() {
   const router = useRouter();
   const { isDark, colors } = useTheme();
 
+  // State untuk Data Asynchronous (Modul 3)
+  const [workerList, setWorkerList] = useState<Worker[]>([]);
+  const [isLoadingWorkers, setIsLoadingWorkers] = useState<boolean>(true);
+  const [asyncStatusText, setAsyncStatusText] = useState<string>("");
+
+  // State dari Modul 2
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Semua");
   const [filterInfo, setFilterInfo] = useState<string>(
     "Menampilkan semua tukang rekomendasi"
   );
 
-  const searchInputRef = useRef<TextInput>(null);
+  const searchInputRef = useRef<any>(null);
+
+  /**
+   * Mengambil data tukang secara asynchronous dari API server
+   * Mendemonstrasikan async/await & simulasi delay
+   */
+  const loadWorkersFromApi = async () => {
+    setIsLoadingWorkers(true);
+    setAsyncStatusText("Sedang mengambil data dari API (Simulasi Delay)...");
+    try {
+      const data = await fetchAllWorkersApi();
+      setWorkerList(data);
+      setAsyncStatusText("Data berhasil dimuat dari Async API!");
+    } catch {
+      setAsyncStatusText("Gagal memuat data dari API.");
+    } finally {
+      setIsLoadingWorkers(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWorkersFromApi();
+  }, []);
+
+  /**
+   * Demonstrasi Pola Promise Chaining (.then, .catch, .finally)
+   * Memenuhi kriteria: "Menggunakan fungsi .then(), .resolve(), dan .reject()"
+   */
+  const handleQuickDemoPromiseChain = () => {
+    setAsyncStatusText("Mencari tukang ID '1' via .then() chain...");
+    getWorkerWithPromiseChain(
+      "1",
+      (foundWorker) => {
+        setAsyncStatusText(`Sukses (.then): Ditemukan ${foundWorker.name}!`);
+        // Berpindah ke detail halaman tukang
+        setTimeout(() => {
+          router.push({
+            pathname: "/worker/[id]",
+            params: { id: foundWorker.id },
+          });
+        }, 600);
+      },
+      (error) => {
+        setAsyncStatusText(`Gagal (.catch): ${error.message}`);
+      }
+    );
+  };
 
   const filteredWorkers = useMemo(() => {
-    return workers.filter((worker) => {
+    return workerList.filter((worker) => {
       const matchesCategory =
         selectedCategory === "Semua" || worker.category === selectedCategory;
       const query = searchQuery.trim().toLowerCase();
@@ -36,7 +91,7 @@ export default function Index() {
 
       return matchesCategory && matchesQuery;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [workerList, selectedCategory, searchQuery]);
 
   useEffect(() => {
     if (selectedCategory === "Semua" && searchQuery.trim() === "") {
@@ -68,7 +123,6 @@ export default function Index() {
 
           <View style={styles.locationRow}>
             <Ionicons name="location" size={18} color={colors.accent} />
-
             <Text style={[styles.locationText, { color: colors.text }]}>
               Jakarta Selatan
             </Text>
@@ -76,6 +130,25 @@ export default function Index() {
         </View>
 
         <View style={styles.headerActions}>
+          {/* Tombol Refresh Async API */}
+          <Pressable
+            style={[
+              styles.notificationButton,
+              {
+                backgroundColor: colors.search,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={loadWorkersFromApi}
+          >
+            <Ionicons
+              name="refresh-outline"
+              size={21}
+              color={colors.accent}
+            />
+          </Pressable>
+
+          {/* Tombol Tema */}
           <Pressable
             style={[
               styles.notificationButton,
@@ -93,6 +166,21 @@ export default function Index() {
             />
           </Pressable>
         </View>
+      </View>
+
+      {/* Banner Status Modul 3 Asynchronous API */}
+      <View
+        style={[
+          styles.apiStatusBar,
+          { backgroundColor: colors.serviceBg, borderColor: colors.border },
+        ]}
+      >
+        <Ionicons name="cloud-done-outline" size={18} color={colors.accent} />
+        <Text style={[styles.apiStatusText, { color: colors.text }]}>
+          {asyncStatusText !== ""
+            ? asyncStatusText
+            : "Modul 3: Async API & Promise Aktif"}
+        </Text>
       </View>
 
       {/* Search */}
@@ -170,7 +258,7 @@ export default function Index() {
         })}
       </View>
 
-      {/* Workers */}
+      {/* Workers Header */}
       <View style={styles.workerHeader}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           Tukang Rekomendasi
@@ -192,56 +280,74 @@ export default function Index() {
         {filterInfo}
       </Text>
 
-      {filteredWorkers.map((worker) => (
-        <Pressable
-          key={worker.id}
-          style={[
-            styles.workerCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={() =>
-            router.push({
-              pathname: "/worker/[id]",
-              params: { id: worker.id },
-            })
-          }
-        >
-          <View
-            style={[styles.workerAvatar, { backgroundColor: colors.accent }]}
+      {/* Indikator Loading Asynchronous saat memuat daftar tukang */}
+      {isLoadingWorkers ? (
+        <Loading message="Mengambil data tukang dari server (Simulasi Delay)..." />
+      ) : (
+        filteredWorkers.map((worker) => (
+          <Pressable
+            key={worker.id}
+            style={[
+              styles.workerCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+            onPress={() =>
+              router.push({
+                pathname: "/worker/[id]",
+                params: { id: worker.id },
+              })
+            }
           >
-            <Ionicons name="person" size={28} color="white" />
-          </View>
+            <View
+              style={[styles.workerAvatar, { backgroundColor: colors.accent }]}
+            >
+              <Ionicons name="person" size={28} color="white" />
+            </View>
 
-          <View style={styles.workerInfo}>
-            <Text style={[styles.workerName, { color: colors.text }]}>
-              {worker.name}
-            </Text>
+            <View style={styles.workerInfo}>
+              <Text style={[styles.workerName, { color: colors.text }]}>
+                {worker.name}
+              </Text>
 
-            <Text style={[styles.workerJob, { color: colors.muted }]}>
-              {worker.job}
-            </Text>
+              <Text style={[styles.workerJob, { color: colors.muted }]}>
+                {worker.job}
+              </Text>
 
-            <View style={styles.workerBottom}>
-              <View style={styles.rating}>
-                <Ionicons name="star" size={15} color={colors.rating} />
+              <View style={styles.workerBottom}>
+                <View style={styles.rating}>
+                  <Ionicons name="star" size={15} color={colors.rating} />
+                  <Text style={[styles.ratingText, { color: colors.muted }]}>
+                    {worker.rating}
+                  </Text>
+                </View>
 
-                <Text style={[styles.ratingText, { color: colors.muted }]}>
-                  {worker.rating}
+                <Text style={[styles.price, { color: colors.accent }]}>
+                  {worker.price}
                 </Text>
               </View>
-
-              <Text style={[styles.price, { color: colors.accent }]}>
-                {worker.price}
-              </Text>
             </View>
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        ))
+      )}
 
-      {/* Demo button */}
+      {/* Tombol Demo Promise Chain (.then) */}
+      <Pressable
+        style={[
+          styles.demoChainButton,
+          { backgroundColor: colors.surface, borderColor: colors.accent },
+        ]}
+        onPress={handleQuickDemoPromiseChain}
+      >
+        <Ionicons name="link-outline" size={18} color={colors.accent} />
+        <Text style={[styles.demoChainButtonText, { color: colors.accent }]}>
+          Uji Demo: Promise Chain (.then() / .catch())
+        </Text>
+      </Pressable>
+
+      {/* Tombol Cari Tukang */}
       <Pressable
         style={[styles.mainButton, { backgroundColor: colors.accent }]}
         onPress={() => {
@@ -256,7 +362,6 @@ export default function Index() {
         }}
       >
         <Ionicons name="search" size={20} color="white" />
-
         <Text style={styles.mainButtonText}>Cari Tukang</Text>
       </Pressable>
 
@@ -275,42 +380,35 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
-
   container: {
     padding: 20,
     paddingTop: 24,
     paddingBottom: 40,
   },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 20,
+    marginBottom: 16,
   },
-
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
   },
-
   locationLabel: {
     fontSize: 12,
     marginBottom: 4,
   },
-
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
   },
-
   locationText: {
     fontSize: 16,
     fontWeight: "bold",
   },
-
   notificationButton: {
     width: 44,
     height: 44,
@@ -319,7 +417,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
+  apiStatusBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  apiStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    flex: 1,
+  },
   searchContainer: {
     height: 50,
     flexDirection: "row",
@@ -327,32 +439,27 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 15,
-    marginBottom: 28,
+    marginBottom: 24,
   },
-
   searchInput: {
     flex: 1,
     marginLeft: 10,
     fontSize: 14,
   },
-
   sectionTitle: {
     fontSize: 19,
     fontWeight: "bold",
     marginBottom: 16,
   },
-
   serviceGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 32,
+    marginBottom: 28,
   },
-
   serviceItem: {
     alignItems: "center",
     width: "23%",
   },
-
   serviceIcon: {
     width: 58,
     height: 58,
@@ -361,29 +468,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 8,
   },
-
   serviceText: {
     fontSize: 12,
     textAlign: "center",
   },
-
   workerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   seeAll: {
     fontWeight: "bold",
     fontSize: 13,
-    marginBottom: 16,
   },
-
   filterInfoText: {
     fontSize: 12,
-    marginBottom: 12,
+    marginBottom: 14,
   },
-
   workerCard: {
     flexDirection: "row",
     borderWidth: 1,
@@ -391,7 +492,6 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 12,
   },
-
   workerAvatar: {
     width: 55,
     height: 55,
@@ -400,43 +500,51 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 14,
   },
-
   workerInfo: {
     flex: 1,
   },
-
   workerName: {
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 3,
   },
-
   workerJob: {
     fontSize: 13,
     marginBottom: 8,
   },
-
   workerBottom: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   rating: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
-
   ratingText: {
     fontSize: 13,
   },
-
   price: {
     fontSize: 13,
     fontWeight: "bold",
   },
-
+  demoChainButton: {
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 6,
+    marginBottom: 12,
+  },
+  demoChainButtonText: {
+    fontSize: 13,
+    fontWeight: "bold",
+  },
   mainButton: {
     height: 50,
     borderRadius: 14,
@@ -444,19 +552,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginTop: 10,
+    marginTop: 4,
   },
-
   mainButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
   },
-
   settingsLink: {
     textAlign: "center",
-    marginTop: 16,
+    marginTop: 18,
     fontSize: 13,
-    textDecorationLine: "underline",
   },
 });
